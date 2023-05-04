@@ -47,7 +47,7 @@ public class MessageFactory {
      * @throws BadAttributeException if the byte array is null or has an invalid format.
      * @throws IOException           if an I/O error occurs.
      */
-    public Message decode(byte[] msgBytes) throws BadAttributeException, IOException {
+    public Message decode(byte[] msgBytes) throws BadAttributeException {
 
         checkIfMsgBytesIsValid(msgBytes);
 
@@ -120,12 +120,12 @@ public class MessageFactory {
                     if (e.getMessage().equals("illegal index value")) {
                         throw new BadAttributeException("Illegal index value", "headers");
                     } else {
-                        throw e;
+                        throw new BadAttributeException("IO Exception: " + e.getMessage(), "headers");
                     }
                 }
                 message = headersMsg;
             }
-                case 0x4 -> { // SETTINGS
+            case 0x4 -> { // SETTINGS
                 if (streamID == 0) {
                     message = new Settings();
                 } else {
@@ -152,6 +152,7 @@ public class MessageFactory {
             super(cause);
         }
     }
+
     private static String b2s(byte[] b) {
         return new String(b, CHARENC);
     }
@@ -190,7 +191,7 @@ public class MessageFactory {
 
      @throws IOException if an I/O error occurs during compression.
      */
-    public byte[] encode(Message msg) throws IOException, BadAttributeException {
+    public byte[] encode(Message msg) throws BadAttributeException {
         // Check if msg is null
         if (msg == null) {
             throw new NullPointerException("Message cannot be null");
@@ -246,7 +247,7 @@ public class MessageFactory {
      @return The payload of the message.
      @throws IOException if an I/O error occurs.
      */
-    private byte[] getPayload(Message msg) throws IOException {
+    private byte[] getPayload(Message msg) throws BadAttributeException {
         byte[] payload = new byte[0];
         if (msg instanceof Data) {
             payload = ((Data) msg).getData();
@@ -263,12 +264,14 @@ public class MessageFactory {
             Set<String> names = headers.getNames();
             for (String name : names) {
                 String value = headers.getValue(name);
-                encoder.encodeHeader(out, s2b(name), s2b(value), false);
+                try {
+                    encoder.encodeHeader(out, s2b(name), s2b(value), false);
+                } catch (IOException e) {
+                    throw new BadAttributeException("IO Exception: " + e.getMessage(), "header");
+                }
             }
 
             payload = out.toByteArray();
-
-
         }
         return payload;
     }

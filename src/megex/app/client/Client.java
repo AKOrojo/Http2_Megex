@@ -212,9 +212,6 @@ public class Client {
                     int unknownTypeCode = response[0] & 0xFF; // Extract the type code from the response byte array
                     System.out.println("Received unknown type: " + unknownTypeCode);
                     continue;
-                } catch (IOException e) {
-                    System.out.println("Received 404 Status" );
-
                 }
 
 
